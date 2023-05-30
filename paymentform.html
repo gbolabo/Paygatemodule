@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pay Gate</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+    />
+
+    <style>
+      .container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .card-form {
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 20px;
+      }
+
+      .card-form .form-group label {
+        font-weight: bold;
+      }
+
+      .card-form .form-group input {
+        border: none;
+        border-bottom: 1px solid #ccc;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .card-form .form-group input:focus {
+        border-color: blue;
+      }
+
+      .btn-submit {
+        background-color: red;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card-form">
+        <h2 class="text-center">Pay Gate</h2>
+        <form id="paymentForm" method="POST">
+          <div class="form-group">
+            <label for="cardNumber">Card Number:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="cardNumber"
+              name="cardNumber"
+              placeholder="Enter card number"
+            />
+          </div>
+          <div class="form-group">
+            <label for="cvv">CVV:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="cvv"
+              name="cvv"
+              placeholder="Enter CVV"
+            />
+          </div>
+          <div class="form-group">
+            <label for="expirationDate">Expiration Date:</label>
+            <div class="input-group date">
+              <input
+                type="text"
+                class="form-control"
+                id="expirationDate"
+                name="expirationDate"
+                placeholder="Enter expiration date (MM/YYYY)"
+              />
+              <span class="input-group-addon">
+                <span class="glyphicon glyphicon-calendar"></span>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="name">Cardholder's Name:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              name="name"
+              placeholder="Enter cardholder's name"
+            />
+          </div>
+          <div class="text-center">
+            <button type="submit" class="btn btn-submit">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
+    <script>
+      $(document).ready(function () {
+        // Initialize the datepicker
+        // Initialize the datepicker
+        $("#expirationDate")
+          .datepicker({
+            format: "mm/yyyy",
+            autoclose: true,
+            startView: "months",
+            minViewMode: "months",
+          })
+          .on("change", function () {
+            // Trigger validation on expiration date change
+            $(this).valid();
+          });
+
+        $("#cardNumber").on("input", function () {
+          var inputValue = $(this).val();
+          var formattedValue = inputValue
+            .replace(/\s/g, "")
+            .substring(0, 16)
+            .replace(/(\d{4})\B/g, "$1 ");
+          $(this).val(formattedValue);
+        });
+
+        // Add custom validation method for expiration date
+        $.validator.addMethod(
+          "validExpirationDate",
+          function (value, element) {
+            // Use a regular expression to validate the format "MM/YYYY"
+            var pattern = /^(0[1-9]|1[0-2])\/\d{4}$/;
+            return this.optional(element) || pattern.test(value);
+          },
+          "Please enter a valid expiration date (MM/YYYY)"
+        );
+
+        // Add form validation rules
+        $("#paymentForm").validate({
+          rules: {
+            cardNumber: {
+              required: true,
+              minlength: 16,
+              maxlength: 16,
+              digits: true,
+              normalizer: function (value) {
+                // Remove spaces from the card number value
+                return value.replace(/\s/g, "");
+              },
+            },
+            cvv: {
+              required: true,
+              minlength: 3,
+              maxlength: 3,
+              digits: true,
+            },
+            expirationDate: {
+              required: true,
+              validExpirationDate: true,
+            },
+            name: {
+              required: true,
+              minlength: 2,
+            },
+          },
+          messages: {
+            cardNumber: {
+              required: "Please enter a valid card number",
+              minlength: "Card number must be 16 digits",
+              maxlength: "Card number must be 16 digits",
+              digits: "Please enter only digits",
+            },
+            cvv: {
+              required: "Please enter a valid CVV",
+              minlength: "CVV must be 3 digits",
+              maxlength: "CVV must be 3 digits",
+              digits: "Please enter only digits",
+            },
+            expirationDate: {
+              required: "Please enter a valid expiration date",
+              validExpirationDate: "Please enter a valid expiration date",
+            },
+            name: {
+              required: "Please enter the cardholder's name",
+              minlength: "Cardholder's name must be at least 2 characters",
+            },
+          },
+          submitHandler: function (form) {
+            event.preventDefault();
+            // Encrypt the form data
+            var encryptedCardNumber = CryptoJS.AES.encrypt(
+              $("#cardNumber").val().replace(/\s/g, ""),
+              "secretKey"
+            ).toString();
+            var encryptedCvv = CryptoJS.AES.encrypt(
+              $("#cvv").val(),
+              "secretKey"
+            ).toString();
+            var encryptedExpirationDate = CryptoJS.AES.encrypt(
+              $("#expirationDate").val(),
+              "secretKey"
+            ).toString();
+            var encryptedCardholder = CryptoJS.AES.encrypt(
+              $("#name").val(),
+              "secretKey"
+            ).toString();
+            var data = {
+              cardNumber: $("#cardNumber").val().replace(/\s/g, ""),
+              cvv: $("#cvv").val(),
+              expirationDate: $("#expirationDate").val(),
+              cardholder: $("#name").val(),
+            };
+
+            let encData = CryptoJS.AES.encrypt(
+              JSON.stringify(data),
+              "secretKey"
+            ).toString();
+            console.log(data);
+            // Send the encrypted form data to the server
+            $.ajax({
+              url: "payment-endpoint",
+              type: "POST",
+              data: { data: encData },
+              success: function (response) {
+                // Handle success response
+                console.log(response);
+                alert("Payment submitted successfully!");
+                form.reset();
+              },
+              error: function (xhr, status, error) {
+                // Handle error response
+
+                console.log(error);
+                alert("Payment submission failed. Please try again later.");
+              },
+            });
+          },
+        });
+      });
+
+      //     submitHandler: function(form) {
+      //     // Encrypt card data before submitting
+      //     var cardNumber = $('#cardNumber').val();
+      //     var cvv = $('#cvv').val();
+      //     var expirationDate = $('#expirationDate').val();
+      //     var name = $('#name').val();
+
+      //     var encryptedCardNumber = CryptoJS.AES.encrypt(cardNumber, "secretKey").toString();
+      //     var encryptedCvv = CryptoJS.AES.encrypt(cvv, "secretKey").toString();
+      //     var encryptedExpirationDate = CryptoJS.AES.encrypt(expirationDate, "secretKey").toString();
+      //     var encryptedName = CryptoJS.AES.encrypt(name, "secretKey").toString();
+
+      //     // Submit the form with encrypted data
+      //     // Replace the URL with your actual form submission URL
+      //     $.ajax({
+      //         url: "https://your-form-submission-url",
+      //         type: "POST",
+      //         data: {
+      //         cardNumber: encryptedCardNumber,
+      //         cvv: encryptedCvv,
+      //         expirationDate: encryptedExpirationDate,
+      //         name: encryptedName
+      //         },
+      //         success: function(response) {
+      //         // Handle success response
+      //         console.log(response);
+      //         alert("Payment submitted successfully!");
+      //         form.reset();
+      //         },
+      //         error: function(xhr) {
+      //         // Handle error response
+      //         console.log(xhr.responseText);
+      //         alert("Payment submission failed. Please try again later.");
+      //         }
+      //     });
+      // }
+    </script>
+  </body>
+</html>
