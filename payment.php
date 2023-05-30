@@ -76,9 +76,67 @@ function paygate_link($params)
         $action = $_GET['action'];
         switch($action) {
             case 'init': 
-                return ''; // Return the html for to enter card details
+                $cardDetailsForm = <<<'HTML'
+                    <div class="container">
+      <div class="card-form">
+        <h2 class="text-center">Pay Gate</h2>
+        <form id="paymentForm" method="POST">
+          <div class="form-group">
+            <label for="cardNumber">Card Number:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="cardNumber"
+              name="cardNumber"
+              placeholder="Enter card number"
+            />
+          </div>
+          <div class="form-group">
+            <label for="cvv">CVV:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="cvv"
+              name="cvv"
+              placeholder="Enter CVV"
+            />
+          </div>
+          <div class="form-group">
+            <label for="expirationDate">Expiration Date:</label>
+            <div class="input-group date">
+              <input
+                type="text"
+                class="form-control"
+                id="expirationDate"
+                name="expirationDate"
+                placeholder="Enter expiration date (MM/YYYY)"
+              />
+              <span class="input-group-addon">
+                <span class="glyphicon glyphicon-calendar"></span>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="name">Cardholder's Name:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              name="name"
+              placeholder="Enter cardholder's name"
+            />
+          </div>
+          <div class="text-center">
+            <button type="submit" class="btn btn-submit">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+                HTML;
+
+                return $cardDetailsForm;
                 break;
-            case 'payer_auth':
+                case 'payer_auth':
                 $post_data = $_POST;
                 if(isset($post_data['data']) && !empty($post_data['data'])){
                     $payload = decrypt($post_data['data']);
